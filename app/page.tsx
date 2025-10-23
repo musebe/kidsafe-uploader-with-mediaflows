@@ -3,9 +3,11 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -21,9 +23,16 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Replace the placeholder with our Uploader component */}
             <Uploader />
           </CardContent>
+          <CardFooter className='flex justify-center'>
+            <Link
+              href='/gallery'
+              className='px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors'
+            >
+              View Approved Gallery
+            </Link>
+          </CardFooter>
         </Card>
       </div>
     </main>
