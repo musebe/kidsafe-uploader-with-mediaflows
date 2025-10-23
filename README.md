@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+# Kid-Safe Media Platform with Next.js and Cloudinary MediaFlows
+
+A full-stack example of an automated, kid-safe content pipeline using **Next.js** and **Cloudinary MediaFlows**.  
+Users upload images that are scanned, blurred, enhanced, and shown only if approved.
+
+## Features
+
+- **Secure Uploads**: Upload directly from the browser with Cloudinary Upload Widget.  
+- **Auto Moderation**: Cloudinary MediaFlow uses AWS Rekognition to detect unsafe content.  
+- **Privacy Filter**: Blurs all faces before approval.  
+- **Kid-Friendly Effect**: Adds a cartoon-style filter.  
+- **Real-Time Status**: Next.js polls Cloudinary for moderation results.  
+- **Safe Gallery**: Displays only approved images.
+
+## Tech Stack
+
+- **Framework**: Next.js (App Router)  
+- **Language**: TypeScript  
+- **Styling**: Tailwind CSS  
+- **UI Components**: shadcn/ui  
+- **Media Backend**: Cloudinary  
+  - Upload Widget  
+  - MediaFlows (workflow automation)  
+  - Admin API (server-side moderation checks)
 
 ## Getting Started
 
-First, run the development server:
+### 1. Prerequisites
+
+- Node.js v18 or newer  
+- A free Cloudinary account
+
+### 2. Installation
+
+```bash
+git clone <your-repo-url>
+cd kid-safe-platform
+npm install
+````
+
+### 3. Cloudinary Setup
+
+1. Get your **Cloud Name**, **API Key**, and **API Secret** from the Cloudinary Dashboard.
+2. Create an **Upload Preset**:
+
+   * Go to **Settings > Upload**
+   * Add a new preset
+   * Set **Signing Mode** to *Unsigned*
+   * Set the **Folder** to `kid-safe-platform`
+
+### 4. Environment Variables
+
+Create `.env.local` in your project root:
+
+```env
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your_cloud_name"
+CLOUDINARY_API_KEY="your_api_key"
+CLOUDINARY_API_SECRET="your_api_secret"
+```
+
+Add your unsigned upload preset name as used in the uploader component.
+
+### 5. Run Locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Cloudinary MediaFlows Setup
+![MediaFlow Setup Diagram](/public/mediaflow.png)
 
-## Learn More
+### Easy Setup (AI Prompt)
 
-To learn more about Next.js, take a look at the following resources:
+In **MediaFlows**, create a new flow and paste this prompt:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> When a file is uploaded with the tag 'moderation-queue', moderate it using AWS Rekognition.
+> If 'rejected', tag it 'unsafe-content'.
+> Otherwise, blur faces, apply 'cartoonify', and tag it 'safe-and-processed'.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Manual Setup
 
-## Deploy on Vercel
+1. **Trigger**: File Upload (tag = `moderation-queue`)
+2. **Moderation**: AWS Rekognition (confidence 0.3)
+3. **Condition**: If `rekognition.moderation_status == rejected`
+4. **If True**: Tag as `unsafe-content`
+5. **If False**:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   * Apply `blur_faces`
+   * Apply `cartoonify`
+   * Tag as `safe-and-processed`
+6. **Enable the flow**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## How It Works
+
+1. **Upload**: User uploads with tag `moderation-queue`.
+2. **Trigger**: MediaFlow starts moderation.
+3. **Poll**: API checks image status via Cloudinary Admin API.
+4. **Approve/Reject**: Tags image as `safe-and-processed` or `unsafe-content`.
+5. **UI Update**: Frontend updates based on final status.
+6. **Gallery**: Displays only approved images.
+
+
+## License
+
+MIT © [Eugene Musebe]
