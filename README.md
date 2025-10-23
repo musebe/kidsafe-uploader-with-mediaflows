@@ -71,7 +71,7 @@ Visit [http://localhost:3000](http://localhost:3000).
 
 
 ## Cloudinary MediaFlows Setup
-![MediaFlow Setup Diagram](./mediaflow.png)
+![MediaFlow Setup Diagram](https://res.cloudinary.com/hackit-africa/image/upload/v1761241405/kid-safe-platform/Mediaflow.png)
 
 ### Easy Setup (AI Prompt)
 
