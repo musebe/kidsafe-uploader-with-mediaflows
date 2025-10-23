@@ -1,28 +1,119 @@
 'use client';
 
-import { CldUploadButton } from 'next-cloudinary';
+import {
+  CldUploadButton,
+  CldImage,
+  CloudinaryUploadWidgetResults,
+} from 'next-cloudinary';
 import { useState } from 'react';
 
-// Define the shape of the Cloudinary upload result
 interface CloudinaryResult {
   public_id: string;
+  width: number;
+  height: number;
 }
 
+// NEW: Define possible states for our UI
+type UploadStatus = 'idle' | 'processing' | 'approved' | 'rejected' | 'error';
+
 export default function Uploader() {
-  const [imageId, setImageId] = useState('');
+  const [result, setResult] = useState<CloudinaryResult | null>(null);
+  // NEW: State to track the definitive moderation status
+  const [status, setStatus] = useState<UploadStatus>('idle');
+
+  const checkModerationStatus = async (publicId: string) => {
+    try {
+      const response = await fetch('/api/check-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ public_id: publicId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Status check failed');
+      }
+
+      const data = await response.json();
+      setStatus(data.status); // Will be 'approved' or 'rejected'
+    } catch (error) {
+      console.error(error);
+      setStatus('error');
+    }
+  };
+
+  const handleSuccess = (uploadResult: CloudinaryUploadWidgetResults) => {
+    if (!uploadResult.info || typeof uploadResult.info !== 'object') {
+      console.error('Upload result is missing info object');
+      return;
+    }
+    const info = uploadResult.info as CloudinaryResult;
+    setResult(info);
+    setStatus('processing');
+    // Start checking the status immediately after upload
+    checkModerationStatus(info.public_id);
+  };
+
+  // Helper function to render UI based on status
+  const renderStatusMessage = () => {
+    switch (status) {
+      case 'processing':
+        return (
+          <div className='text-center'>
+            <h3 className='text-xl font-semibold mb-2'>
+              Analyzing for Safety...
+            </h3>
+            <p className='text-gray-600'>
+              Please wait while we process your image.
+            </p>
+          </div>
+        );
+      case 'approved':
+        return (
+          <div>
+            <h3 className='text-xl font-semibold text-center mb-4'>
+              Upload Approved!
+            </h3>
+            <div className='flex justify-center'>
+              <CldImage
+                src={result!.public_id}
+                width={result!.width > 600 ? 600 : result!.width}
+                height={
+                  result!.height > 600
+                    ? (result!.height * 600) / result!.width
+                    : result!.height
+                }
+                alt='Moderated and enhanced image'
+                effects={[{ blurFaces: true }, { cartoonify: true }]}
+                className='rounded-lg shadow-lg'
+              />
+            </div>
+          </div>
+        );
+      case 'rejected':
+        return (
+          <div className='text-center p-4 border border-red-500 bg-red-50 rounded-lg'>
+            <h3 className='text-xl font-semibold text-red-700 mb-2'>
+              Upload Rejected
+            </h3>
+            <p className='text-red-600'>
+              This image did not meet our safety guidelines.
+            </p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div>
       <CldUploadButton
-        // Replace with your actual upload preset name
         uploadPreset='kidsafe-mediaflow-blog'
-        onSuccess={(result) => {
-          // Type assertion to ensure result.info has the expected shape
-          const info = result.info as CloudinaryResult;
-          setImageId(info.public_id);
-        }}
+        options={{ tags: ['moderation-queue'] }}
+        onSuccess={handleSuccess}
         className='w-full justify-center h-48 border-2 border-dashed rounded-lg flex items-center bg-gray-50 hover:bg-gray-100 transition-colors'
       >
+        {/* SVG and text content */}
         <div className='text-center'>
           <svg
             xmlns='http://www.w3.org/2000/svg'
@@ -44,13 +135,7 @@ export default function Uploader() {
         </div>
       </CldUploadButton>
 
-      {imageId && (
-        <div className='mt-4'>
-          <p className='font-semibold'>Your image is uploaded!</p>
-          <p className='text-sm text-gray-500'>Public ID: {imageId}</p>
-          {/* We will display the moderated image here later */}
-        </div>
-      )}
+      {status !== 'idle' && <div className='mt-8'>{renderStatusMessage()}</div>}
     </div>
   );
 }
