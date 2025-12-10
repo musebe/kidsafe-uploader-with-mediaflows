@@ -2,6 +2,8 @@ import { v2 as cloudinary } from 'cloudinary';
 import GalleryGrid from './GalleryGrid';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export interface CloudinaryResource {
   public_id: string;
   secure_url: string;
